@@ -27,7 +27,6 @@ function Maze:enter()
 
     self.clear_maze = false
 
-
     local button_x = self.col_end + maze_square_size
     local font = love.graphics.getFont()
 
