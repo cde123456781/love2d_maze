@@ -3,6 +3,8 @@ local maze_square_size = 25
 local button_width = 100
 local button_height = 40
 local Push = require("lib/push")
+local Bfs = require("src/systems/algorithms/bfs")
+
 
 local Maze = {
     maze = {}
@@ -26,6 +28,7 @@ function Maze:enter()
     self.goal_position = nil
 
     self.clear_maze = false
+    self.mode = "Drawing"
 
     local button_x = self.col_end + maze_square_size
     local font = love.graphics.getFont()
@@ -84,9 +87,63 @@ function Maze:enter()
 
     }
 
+
+
+    local algorithm_button_y = maze_size * (maze_square_size + 3)
+
+
+    self.algorithm_buttons = {
+        {
+            y = algorithm_button_y,
+            font_y = algorithm_button_y + (button_height - font:getHeight())/2,
+            label = "BFS",
+            hover = false,
+
+        },
+        {
+
+            y = algorithm_button_y,
+            font_y = algorithm_button_y + (button_height - font:getHeight())/2,
+            label = "Djikstra's",
+            hover = false,
+        },
+        {
+            y = algorithm_button_y,
+            font_y = algorithm_button_y + (button_height - font:getHeight())/2,
+            label = "Greedy",
+            hover = false,
+        },
+        {
+            y = algorithm_button_y,
+            font_y = algorithm_button_y + (button_height - font:getHeight())/2,
+            label = "A*",
+            hover = false,
+        },
+
+
+    }
+
+    local algorithm_button_x = (self.window_w - (#self.algorithm_buttons * (button_width) + (#self.algorithm_buttons - 1) * ( button_width/2)))/2
+    local algorithm_button_gap = 1.5 * button_width
+    for i, k in ipairs(self.algorithm_buttons) do
+        self.algorithm_buttons[i].x = algorithm_button_x + (i - 1) * algorithm_button_gap
+        self.algorithm_buttons[i].font_x = algorithm_button_x + (i - 1) * algorithm_button_gap + (button_width - font:getWidth(k.label))/2
+    end
+    self.algorithm_timer = 0
+    self.algorithm_speed = 0.2
+
+    self.clear_algorithm_button = {
+        y = algorithm_button_y + 2 * button_height,
+        font_y = algorithm_button_y + 2 * button_height + (button_height - font:getHeight())/2,
+        label = "Clear Algorithm",
+        hover = false,
+        x = (self.window_w - button_width)/2,
+        font_x = (self.window_w - button_width)/2 + (button_width - font:getWidth("Clear Algorithm"))/2
+    }
     
 
     self.cursor = love.mouse.getSystemCursor("hand")
+
 
 
 
@@ -99,6 +156,7 @@ function Maze:generate_maze()
     self.start_position = nil
     self.goal_position = nil
     self.clear_maze = false
+    self.mode = "Drawing"
 
     for i=1, maze_size, 1 do
         local row = {}
@@ -114,39 +172,82 @@ end
 function Maze:mousepressed()
     if love.mouse.isDown(1) then
         local x, y = Push:toGame(love.mouse.getPosition())
-        for i, k in ipairs(self.buttons) do
-            if x > k.x and x < k.x + button_width and y > k.y and y < k.y + button_height then
-                if (k.tool ~= "Clear") then
-                    self.button_selected = k.tool
-                else 
-                    self.clear_maze = true
-                end
-                love.audio.play(self.button_select_sound)
-                
-            end
-        end
+        
 
-        if x > self.col_start and x < self.col_end and y > self.row_start and y < self.row_end then
-            local col_selected = math.floor((x - self.col_start) / maze_square_size) + 1
-            local row_selected = math.floor((y - self.row_start) / maze_square_size) + 1
-            if col_selected <= maze_size and row_selected <= maze_size then
-                if self.button_selected == "Start" then
-                    if self.start_position ~= nil then
-                        self.maze[self.start_position.row][self.start_position.col] = ""
+        
+        if self.mode == "Drawing" then
+            for i, k in ipairs(self.buttons) do
+                if x > k.x and x < k.x + button_width and y > k.y and y < k.y + button_height then
+                    if (k.tool ~= "Clear") then
+                        self.button_selected = k.tool
+                    else 
+                        self.clear_maze = true
                     end
-                    self.maze[row_selected][col_selected] = "Start"
-                    self.start_position = {row = row_selected, col = col_selected}
-                    self.click_sound:setPitch(love.math.random(80, 110) / 100)
-                    love.audio.play(self.click_sound)
-                elseif self.button_selected == "Goal" then
-                    if self.goal_position ~= nil then
-                        self.maze[self.goal_position.row][self.goal_position.col] = ""
-                    end
-                    self.maze[row_selected][col_selected] = "Goal"
-                    self.goal_position = {row = row_selected, col = col_selected}
-                    self.click_sound:setPitch(love.math.random(80, 110) / 100)
-                    love.audio.play(self.click_sound)
+                    love.audio.play(self.button_select_sound)
+                    
                 end
+            end
+
+            for i, k in ipairs(self.algorithm_buttons) do
+                if x > k.x and x < k.x + button_width and y > k.y and y < k.y + button_height then
+                    self.mode = k.label
+                    love.audio.play(self.button_select_sound)
+                    if (k.label == "BFS") then 
+                        self.algorithm = Bfs:new(self.maze, self.start_position, self.goal_position)
+                
+                    elseif (k.label == "Djikstra's") then
+                        
+                    elseif (k.label == "Greedy") then
+
+                    elseif (k.label == "A*") then
+
+                    end
+
+                    if self.algorithm == nil then
+                        self.mode = "Drawing"
+                    end
+                    
+                end
+            end
+    
+
+
+            if x > self.col_start and x < self.col_end and y > self.row_start and y < self.row_end then
+                local col_selected = math.floor((x - self.col_start) / maze_square_size) + 1
+                local row_selected = math.floor((y - self.row_start) / maze_square_size) + 1
+                if col_selected <= maze_size and row_selected <= maze_size then
+                    if self.button_selected == "Start" then
+                        if self.start_position ~= nil then
+                            self.maze[self.start_position.row][self.start_position.col] = ""
+                        end
+                        self.maze[row_selected][col_selected] = "Start"
+                        self.start_position = {row = row_selected, col = col_selected}
+                        self.click_sound:setPitch(love.math.random(80, 110) / 100)
+                        love.audio.play(self.click_sound)
+                    elseif self.button_selected == "Goal" then
+                        if self.goal_position ~= nil then
+                            self.maze[self.goal_position.row][self.goal_position.col] = ""
+                        end
+                        self.maze[row_selected][col_selected] = "Goal"
+                        self.goal_position = {row = row_selected, col = col_selected}
+                        self.click_sound:setPitch(love.math.random(80, 110) / 100)
+                        love.audio.play(self.click_sound)
+                    end
+                end
+            end
+        else
+
+            -- Clear Algorithm Button
+            if (
+                x > self.clear_algorithm_button.x and 
+                x < self.clear_algorithm_button.x + button_width and 
+                y > self.clear_algorithm_button.y and 
+                y < self.clear_algorithm_button.y + button_height
+            ) then
+                self.mode = "Drawing"
+                self.algorithm:clear()
+                self.algorithm = nil
+                love.audio.play(self.button_select_sound)
             end
         end
 
@@ -162,6 +263,10 @@ function Maze:mousepressed()
 end
 
 function Maze:handle_mouse_hold()
+    if self.mode ~= "Drawing" then
+        return
+    end
+
     local x, y = Push:toGame(love.mouse.getPosition())
     if x == nil or y == nil then
         return
@@ -212,6 +317,30 @@ function Maze:button_hover()
         end
     end
 
+    for i, k in ipairs(self.algorithm_buttons) do
+        if x > k.x and x < k.x + button_width and y > k.y and y < k.y + button_height then
+            self.algorithm_buttons[i].hover = true
+            love.mouse.setCursor(self.cursor)
+            is_hovering = true
+        else
+            self.algorithm_buttons[i].hover = false
+        end
+    end
+
+    if (
+        x > self.clear_algorithm_button.x and 
+        x < self.clear_algorithm_button.x + button_width and
+        y > self.clear_algorithm_button.y and
+        y < self.clear_algorithm_button.y + button_height and
+        self.mode ~= "Drawing"
+    ) then
+        self.clear_algorithm_button.hover = true
+        love.mouse.setCursor(self.cursor)
+        is_hovering = true
+    else
+        self.clear_algorithm_button.hover = false
+    end
+
     if not is_hovering then
         love.mouse.setCursor()
     end
@@ -224,6 +353,23 @@ function Maze:update(dt)
     end
     if love.mouse.isDown(1) then
         Maze:handle_mouse_hold()
+    end
+
+    if self.mode ~= "Drawing" then
+        if not self.algorithm.no_path_found and not self.algorithm.backtrack_complete then
+            self.algorithm_timer = self.algorithm_timer - dt
+            print("HI")
+            if self.algorithm_timer < 0 then
+                self.algorithm_timer = self.algorithm_speed
+                if not self.algorithm.is_goal_reached then
+                    self.algorithm:step()
+                else
+                    self.algorithm:backtrack()
+                end
+            end
+        else 
+            -- Display message saying no path found
+        end
     end
 
     self:button_hover()
@@ -249,22 +395,55 @@ function Maze:draw()
                 love.graphics.setColor(0.9, 0.2, 0.2)
                 love.graphics.rectangle("fill", self.col_start + (col - 1) * maze_square_size + 1, row * maze_square_size + 1, maze_square_size - 2, maze_square_size - 2)
                 love.graphics.setColor(0, 0, 0) 
+            elseif self.algorithm then
+                Maze:handle_algorithm_draw(row, col)
+                
             end
             
         end 
     end
 
     Maze:draw_buttons()
+    Maze:draw_algorithm_buttons()
+    
 
 
 end
 
 
+function Maze:handle_algorithm_draw(row, col)
+    if self.algorithm:checkInCameFrom({row = row, col = col}) then
+        love.graphics.setColor(144/255,213/255,255/255)
+        love.graphics.rectangle("fill", self.col_start + (col - 1) * maze_square_size + 1, row * maze_square_size + 1, maze_square_size - 2, maze_square_size - 2)
+    end
+    if self.algorithm:checkInNeighbours({row = row, col = col}) then
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.rectangle("line", self.col_start + (col - 1) * maze_square_size + 2, row * maze_square_size + 2, maze_square_size - 4, maze_square_size - 4)
+
+    end
+
+    if self.algorithm:checkInFrontier({row = row, col = col}) then
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.rectangle("line", self.col_start + (col - 1) * maze_square_size, row * maze_square_size, maze_square_size, maze_square_size)
+
+    end
+
+    if self.algorithm:checkInPath({row = row, col = col}) then
+        love.graphics.setColor(128/255,0/255,128/255)
+        love.graphics.rectangle("fill", self.col_start + (col - 1) * maze_square_size + 1, row * maze_square_size + 1, maze_square_size - 2, maze_square_size - 2)
+
+    end
+
+    
+
+    love.graphics.setColor(0, 0, 0)
+end
+
 function Maze:draw_buttons() 
 
     for i, k in ipairs(self.buttons) do
         love.graphics.rectangle("line", k.x, k.y, button_width, button_height)
-        if k.hover then
+        if k.hover or (k.tool == self.button_selected and self.mode == "Drawing") then
             love.graphics.setColor(144/255,213/255,255/255)
             love.graphics.rectangle("fill", k.x + 1, k.y + 1, button_width - 2, button_height - 2)
             love.graphics.setColor(0, 0, 0)
@@ -279,6 +458,49 @@ function Maze:draw_buttons()
         label = "Current Tool: "..self.button_selected
     }
     love.graphics.print(tool_selected_display.label, tool_selected_display.x, tool_selected_display.y)
+    
+end
+
+function Maze:draw_algorithm_buttons() 
+    
+
+    for i, k in ipairs(self.algorithm_buttons) do
+        love.graphics.rectangle("line", k.x, k.y, button_width, button_height)
+        if k.hover or self.mode == k.label then
+            love.graphics.setColor(144/255,213/255,255/255)
+            love.graphics.rectangle("fill", k.x + 1, k.y + 1, button_width - 2, button_height - 2)
+            love.graphics.setColor(0, 0, 0)
+        end
+        love.graphics.print(k.label, k.font_x, k.font_y)
+    end
+
+    if self.mode ~= "Drawing" then
+        love.graphics.rectangle(
+            "line", 
+            self.clear_algorithm_button.x, 
+            self.clear_algorithm_button.y,
+            button_width,
+            button_height
+        )
+
+        if self.clear_algorithm_button.hover then
+            love.graphics.setColor(144/255,213/255,255/255)
+            love.graphics.rectangle(
+                "fill", 
+                self.clear_algorithm_button.x + 1, 
+                self.clear_algorithm_button.y + 1, 
+                button_width - 2, 
+                button_height - 2
+            )
+            love.graphics.setColor(0, 0, 0)
+        end
+        love.graphics.print(
+            self.clear_algorithm_button.label, 
+            self.clear_algorithm_button.font_x, 
+            self.clear_algorithm_button.font_y
+        )
+    end
+
     
 end
 

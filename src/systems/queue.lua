@@ -14,5 +14,7 @@ function Queue:push(item)
 end
 
 function Queue:pop()
-    table.remove(self.items, 1)
+    return table.remove(self.items, 1)
 end
+
+return Queue
