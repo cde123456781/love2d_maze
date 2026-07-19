@@ -13,7 +13,9 @@ local Algorithm = {
 }
 Algorithm.__index = Algorithm
 
-
+function Algorithm:get_cost(current_tile, neighbour)
+    print("Implement in subclasses")
+end
 
 function Algorithm:get_neighbours(current_tile)
     local current_row = current_tile.row
@@ -36,6 +38,7 @@ function Algorithm:get_neighbours(current_tile)
             col = current_col
         }
     }
+
 
     return neighbours_to_check
 end
@@ -91,10 +94,10 @@ function Algorithm:step()
 
         for _, k in ipairs(self.neighbours) do
 
-            if self.maze[k.row] ~= nil then
+            if self.maze[k.row] ~= nil and self.maze[k.row][k.col] ~= nil then
                 
-                if self.maze[k.row][k.col] ~= nil and self.maze[k.row][k.col] ~= "Wall" and (self.came_from[k.row] == nil or self.came_from[k.row][k.col] == nil) then
-                    self.frontier:push({row = k.row, col = k.col})
+                if self.maze[k.row][k.col] ~= "Wall" and (self.came_from[k.row] == nil or self.came_from[k.row][k.col] == nil) then
+                    self.frontier:push({row = k.row, col = k.col, cost = k.cost})
                     self.came_from[k.row] = self.came_from[k.row] or {}
                     self.came_from[k.row][k.col] = {row = current.row, col = current.col}
                     if self.goal.col == k.col and self.goal.row == k.row then

@@ -1,6 +1,8 @@
 local Queue = require("src/systems/queue")
 local Algorithm = require("src/systems/algorithms/algorithm")
-local Bfs = {}
+local Bfs = {
+    
+}
 Bfs.__index = Bfs
 setmetatable(Bfs, Algorithm)
 
@@ -9,7 +11,12 @@ function Bfs:new(maze, start, goal)
         return
     end
     local queue = Queue:new()
-    queue:push(start)
+    local start_table = {
+        row = start.row,
+        col = start.col,
+        cost = 0
+    }
+    queue:push(start_table)
     return setmetatable({
         maze = maze,
     start = start,
@@ -37,5 +44,8 @@ function Bfs:new(maze, start, goal)
 
 end
 
+function Bfs:get_cost(current_tile, neighbour)
+    return current_tile.cost + 1
+end
 
 return Bfs

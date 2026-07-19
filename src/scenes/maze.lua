@@ -4,8 +4,9 @@ local button_width = 100
 local button_height = 40
 local Push = require("lib/push")
 local Bfs = require("src/systems/algorithms/bfs")
-
-
+local Djikstra = require("src/systems/algorithms/djikstra")
+local Greedy = require("src/systems/algorithms/greedy")
+local AStar = require("src/systems/algorithms/aStar")
 local Maze = {
     maze = {}
 }
@@ -196,11 +197,11 @@ function Maze:mousepressed()
                         self.algorithm = Bfs:new(self.maze, self.start_position, self.goal_position)
                 
                     elseif (k.label == "Djikstra's") then
-                        
+                        self.algorithm = Djikstra:new(self.maze, self.start_position, self.goal_position)
                     elseif (k.label == "Greedy") then
-
+                        self.algorithm = Greedy:new(self.maze, self.start_position, self.goal_position)
                     elseif (k.label == "A*") then
-
+                        self.algorithm = AStar:new(self.maze, self.start_position, self.goal_position)
                     end
 
                     if self.algorithm == nil then
@@ -358,7 +359,6 @@ function Maze:update(dt)
     if self.mode ~= "Drawing" then
         if not self.algorithm.no_path_found and not self.algorithm.backtrack_complete then
             self.algorithm_timer = self.algorithm_timer - dt
-            print("HI")
             if self.algorithm_timer < 0 then
                 self.algorithm_timer = self.algorithm_speed
                 if not self.algorithm.is_goal_reached then
